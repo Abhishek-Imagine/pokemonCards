@@ -1,0 +1,155 @@
+import { useEffect, useState } from "react"
+import "./index.css"
+import { PokemonCards } from "./PokemonCards"
+
+export const Pokemon = () => {
+
+    const [pokemon , setPokemon] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [search , setSearch] = useState("")
+
+    const API = "https://pokeapi.co/api/v2/pokemon?limit=24"
+
+    const fetchPokemon = async() =>{
+        try{
+            const res =  await fetch(API)
+            const data = await res.json()
+            console.log(data)
+
+            const detailedPokemonData = data.results.map(async(curPokemon) => {
+                const res = await fetch(curPokemon.url)
+                const data = await res.json()
+                return data
+            })
+
+            const detailedResponses = await Promise.all(detailedPokemonData)
+
+            console.log(detailedResponses)
+
+            setPokemon(detailedResponses)
+            setLoading(false)
+            
+        }catch(error) {
+            console.log("Code Nahi chal raha hai", error)
+            setError(error)
+            setLoading(false)
+        }
+    }
+
+    useEffect(()=> {
+        fetchPokemon()
+    },[])
+
+    const searchData = pokemon.filter((curPokemon) => curPokemon.name.toLowerCase().includes(search.toLowerCase()))
+
+    if(loading){
+        return(
+            <div>
+                <h1>Loading....</h1>
+            </div>
+        )
+    }
+
+    if(error){
+        return(
+            <div>
+                <h1>Error: {error.message}</h1>
+            </div>
+        )
+    }
+
+    return(
+        <section className="container">
+            <header>
+                <h1>Lets Catch Pokemon</h1>
+            </header>
+
+            <div className="pokemon-search">
+                <input type="text" placeholder="Search Pokemon" value={search} onChange={(e) => setSearch(e.target.value)}/>
+            </div>
+
+            <ul className="cards">
+                {
+                    // pokemon.map((curPokemon)=> {
+                        searchData.map((curPokemon)=> {
+                        return(
+                            <PokemonCards 
+                                    key={curPokemon.id}
+                                    pokemonData={curPokemon} 
+                            />
+                        )
+                    })
+                }
+            </ul>
+
+        </section>
+    )
+}
+
+
+
+
+
+
+
+export  const PokemonCards = ({pokemonData}) => {
+
+    return(
+        <li className="pokemon-card">
+            <figure>
+                <img 
+                    src={pokemonData.sprites.other.dream_world.front_default} 
+                    alt={pokemonData.name}
+                    className="pokemon-image" 
+                    />
+            </figure>
+            <h1>{pokemonData.name}</h1>
+
+            <div className="pokemon-info pokemon-highlight">
+                <p>
+                    {
+                        pokemonData.types.map((curTypes)=> curTypes.type.name).join(" , ")
+                    }
+                </p>
+            </div>
+
+            <div className="grid-three-cols">
+                <p className="pokemon-info">
+                    <span>Height:</span> {pokemonData.height}
+                </p>
+
+                <p className="pokemon-info">
+                    <span>Weight:</span> {pokemonData.weight}
+                </p>
+
+                <p className="pokemon-info">
+                    <span>Speed</span> {pokemonData.stats[5].base_stat}
+                </p>
+            </div>
+
+            <div className="grid-three-cols">
+                <div className="pokemon-info">
+                <p>{pokemonData.base_experience}</p>
+                <span>Experience:</span>
+                </div>
+
+                <div className="pokemon-info">
+                <p>{pokemonData.stats[1].base_stat}</p>
+                <span>Attack:</span>
+                </div>
+
+                <div className="pokemon-info">
+                <p>
+                 {pokemonData.abilities
+                    .map((abilityInfo)=> abilityInfo.ability.name)
+                    .slice(0,1)
+                    .join(" , ")
+                    }</p>
+                <span>Abilities:</span>
+                </div>
+            </div>
+
+        </li>
+    )
+}
